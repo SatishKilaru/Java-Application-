@@ -165,6 +165,7 @@ class Caluculation {
 	}
 
 	public ArrayList<Transaction> getTransactions(int ano, String date1, String date2) throws Exception {
+		// System.out.println(ano);
 		ArrayList<Transaction> arr3 = new ArrayList<>();
 		SimpleDateFormat f = new SimpleDateFormat("dd-MM-yyyy");
 		Date d1 = f.parse(date1);
@@ -181,6 +182,7 @@ class Caluculation {
 	}
 
 	public double getBalanceAsOndate(int accno, String date) throws Exception {
+		// System.out.println(accno);
 		Date date1 = new Date();
 		SimpleDateFormat df = new SimpleDateFormat("dd-mm-yyyy");
 		String dat = df.format(date1);
@@ -196,58 +198,82 @@ class Caluculation {
 		}
 		double ba = b.getBal();
 		ArrayList<Transaction> arr4 = getTransactions(accno, date, dat);
-		for (int i = arr4.size() - 1; i >= 0; i--) {
-			Transaction t = arr4.get(i);
+		// for (int i = arr4.size() - 1; i >= 0; i--) {
+		// Transaction t = arr4.get(i);
+		for (Transaction t : arr4) {
 			if (t.getType().equals("D")) {
 				ba = ba - t.getAmt();
-			} else {
+				// System.out.print(ba + "D" + t.getAmt());
+			} else if (t.getType().equals("W")) {
 				ba = ba + t.getAmt();
+				// System.out.print(ba + "W" + t.getAmt());
 			}
 		}
 		return ba;
 	}
 
 	public double getMinBal(int acc, String m) throws Exception {
+		// System.out.println(acc);
 		String s = "10-" + m + "-2023";
 		double b = getBalanceAsOndate(acc, s);
 		for (int i = 11; i < 31; i++) {
-			String s1 = "10-" + m + "-2023";
+			String s1 = i + "-" + m + "-2023";
+			// System.out.print(s1);
 			double b1 = getBalanceAsOndate(acc, s1);
 			if (b1 < b) {
 				b = b1;
 			}
+			// System.out.print(b + " ");
 		}
+		// System.out.print(b + " ");
 		return b;
 	}
 
 	public void calInterst(Account a) throws Exception {
+		// System.out.println(a.getAccNo());
 		double interest = 0;
 		String cdate = a.getOpdate();
 		Date date1 = new Date();
-		SimpleDateFormat df = new SimpleDateFormat("dd-mm-yyyy");
+		SimpleDateFormat df = new SimpleDateFormat("dd-MM-yyyy");
 		String pdate = df.format(date1);
-		int m = date1.getMonth();
-		int d = date1.getDay();
-		int y = date1.getYear();
-		String dd = String.valueOf(d);
-		String yy = String.valueOf(y);
-		String idate = dd + "-" + (m - 6) + "-" + yy;
-		if (cdate.compareTo(idate) < 0) {
-			for (int i = 0; i < 6; i++) {
-				String ss = dd + "-" + (m - i) + "-" + yy;
+		StringTokenizer st = new StringTokenizer(pdate, "-");
+		String d = st.nextToken();
+		int m = Integer.parseInt(st.nextToken());
+		String y = st.nextToken();
+		String idate = d + "-" + "0" + (m - 6) + "-" + y;
+		// System.out.println(idate + " " + cdate);
+		SimpleDateFormat formatter = new SimpleDateFormat("dd-MM-yyyy");
+		Date d1 = formatter.parse(cdate);
+		Date d2 = formatter.parse(idate);
+		if (d2.after(d1)) {
+			for (int i = 1; i <= 6; i++) {
+				String ss = String.valueOf(m - i);
 				double ba = getMinBal(a.getAccNo(), ss);
 				double in;
-				in = (ba * 0.45) / 100;
+				in = (ba * 0.45 * 1) / (6 * 100);
 				interest += in;
+				System.out.println(ba);
+			}
+			System.out.println(interest);
+		} else {
+			int dif;
+			int pm = d1.getMonth();
+			int cm = date1.getMonth();
+			dif = pm - cm;
+			for (int i = 1; i <= dif; i++) {
+				String ss = String.valueOf(m - i);
+				double ba = getMinBal(a.getAccNo(), ss);
+				double in;
+				in = (ba * 0.45 * 1) / (6 * 100);
+				interest += in;
+				// System.out.println(ba);
 			}
 			System.out.println(interest);
 		}
 	}
 
 	public void A() throws Exception {
-		System.out.println(getBalanceAsOndate(1001, "05-06-2023"));
-		System.out.println(getMinBal(1001, "06"));
-		calInterst(arr1.get(0));
+		calInterst(arr1.get(3));
 	}
 }
 
