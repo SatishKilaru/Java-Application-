@@ -1,5 +1,7 @@
 package Sample;
-
+import java.time.LocalDate;
+import java.time.Month;
+import java.time.Period;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -117,8 +119,8 @@ class Caluculation {
 	ArrayList<Transaction> arr2 = new ArrayList<>();
 
 	public void loadDetails() throws IOException {
-		File f1 = new File("C:\\Users\\satish.ki\\Documents\\satish\\act.txt");
-		File f2 = new File("C:\\Users\\satish.ki\\Documents\\satish\\transaction.txt");
+		File f1 = new File("C:\\Users\\Kilaru Satish\\OneDrive\\Documents\\SatishJava\\Account.txt");
+		File f2 = new File("C:\\Users\\Kilaru Satish\\OneDrive\\Documents\\SatishJava\\transactions.txt");
 		FileReader fr1 = new FileReader(f1);
 		BufferedReader br1 = new BufferedReader(fr1);
 		String str;
@@ -216,6 +218,7 @@ class Caluculation {
 		// System.out.println(acc);
 		String s = "10-" + m + "-2023";
 		double b = getBalanceAsOndate(acc, s);
+		//System.out.println("s");
 		for (int i = 11; i < 31; i++) {
 			String s1 = i + "-" + m + "-2023";
 			// System.out.print(s1);
@@ -238,9 +241,14 @@ class Caluculation {
 		String pdate = df.format(date1);
 		StringTokenizer st = new StringTokenizer(pdate, "-");
 		String d = st.nextToken();
+		
 		int m = Integer.parseInt(st.nextToken());
 		String y = st.nextToken();
 		String idate = d + "-" + "0" + (m - 6) + "-" + y;
+		StringTokenizer st1= new StringTokenizer(cdate, "-");
+		String dd = st1.nextToken();
+		int mm = Integer.parseInt(st1.nextToken());
+		String yy = st1.nextToken();
 		// System.out.println(idate + " " + cdate);
 		SimpleDateFormat formatter = new SimpleDateFormat("dd-MM-yyyy");
 		Date d1 = formatter.parse(cdate);
@@ -256,17 +264,20 @@ class Caluculation {
 			}
 			System.out.println(interest);
 		} else {
-			int dif;
+			LocalDate date11 = LocalDate.of(Integer.parseInt(y),Month.of(m),Integer.parseInt(d));
+			LocalDate date2 = LocalDate.of(Integer.parseInt(yy),Month.of(mm),Integer.parseInt(dd));
+			Period period = Period.between(date2, date11);
+	        int dif = period.getYears() * 12 + period.getMonths();
 			int pm = d1.getMonth();
 			int cm = date1.getMonth();
-			dif = pm - cm;
+			//dif = pm - cm;
 			for (int i = 1; i <= dif; i++) {
 				String ss = String.valueOf(m - i);
 				double ba = getMinBal(a.getAccNo(), ss);
 				double in;
-				in = (ba * 0.45 * 1) / (6 * 100);
+				in = (ba * 4.5 * 1) / (12 * 100);
 				interest += in;
-				// System.out.println(ba);
+				//System.out.println(ba);
 			}
 			System.out.println(interest);
 		}
