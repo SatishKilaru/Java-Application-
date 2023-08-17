@@ -1,0 +1,347 @@
+package com.example;
+
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+@SuppressWarnings("serial")
+@WebServlet("/EmployeeServlet")
+public class EmployeeServlet extends HttpServlet {
+	Connection connection = null;
+	PreparedStatement preparedStatement = null;
+	ResultSet resultSet = null;
+
+	protected void doGet(HttpServletRequest request, HttpServletResponse response)
+			throws ServletException, IOException {
+
+		String buttonClicked = request.getParameter("button");
+		response.setContentType("text/html");
+		PrintWriter out = response.getWriter();
+		out.println(buttonClicked);
+		try {
+
+			String url = "jdbc:postgresql://192.168.110.48:5432/plf_training";
+			String username = "plf_training_admin";
+			String password = "pff123";
+			Class.forName("org.postgresql.Driver");
+			Connection connection = DriverManager.getConnection(url, username, password);
+
+			String sql = "SELECT * FROM satish_k";
+			Statement statement = connection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,
+					ResultSet.CONCUR_READ_ONLY);
+			ResultSet resultSet = statement.executeQuery(sql);
+			out.println("<html><head><title>Employee Details</title></head><body>");
+			out.println("<h1>Employee Details</h1>");
+			out.println("<table border=\"1\">");
+			out.println("<tr><th>Name</th><th>Number</th><th>Job</th><th>Salary</th></tr>");
+
+			int rowIndex = 0; // Keep track of the current row index
+			out.println("Satish");
+			if (resultSet.next()) {
+				out.println("Satish");
+				resultSet.beforeFirst();
+				while (resultSet.next()) {
+					out.println("Satish");
+					String name = resultSet.getString("name");
+					String number = resultSet.getString("number");
+
+					String job = resultSet.getString("job");
+					String salary = resultSet.getString("salary");
+
+					if (buttonClicked.equals("First") && rowIndex == 0) {
+						
+				
+					} else if (buttonClicked.equals("Last") && resultSet.isLast()) {
+						out.println("<tr><td>" + name + "</td><td>" + number + "</td><td>" + job + "</td><td>" + salary
+								+ "</td></tr>");
+						break; // Display only the last row
+					} else if (buttonClicked.equals("Previous") && rowIndex > 0) {
+						rowIndex--;
+					} else if (buttonClicked.equals("Next") && !resultSet.isLast()) {
+						rowIndex++;
+					}
+				}
+			} else {
+				out.println("<tr><td colspan=\"4\">No employee data found</td></tr>");
+			}
+
+			out.println("</table>");
+
+			out.println("<form action=\"EmployeeServlet\" method=\"get\">");
+			out.println("<input type=\"submit\" name=\"button\" value=\"First\">");
+			out.println("<input type=\"submit\" name=\"button\" value=\"Last\">");
+			out.println("<input type=\"submit\" name=\"button\" value=\"Previous\">");
+			out.println("<input type=\"submit\" name=\"button\" value=\"Next\">");
+			out.println("</form>");
+
+			out.println("</body></html>");
+
+		} catch (SQLException | ClassNotFoundException e) {
+			e.printStackTrace();
+			out.println(e);
+		} finally {
+			JDBCHelper.closeResultSet(resultSet);
+			JDBCHelper.closePreparedStatement(preparedStatement);
+			JDBCHelper.closeConnection(connection);
+			out.close();
+		}
+	}
+
+	protected void doPost(HttpServletRequest request, HttpServletResponse response)
+			throws ServletException, IOException {
+		doGet(request, response);
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EmployeeFramework</title>
+<style>
+  
+  .heading {
+    font-size: 18px;
+    font-weight: bold;
+    margin: 0 0 20px;
+  }
+  .label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+  }
+  .input {
+    width: 100%;
+    padding: 5px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+  }
+  .button {
+    padding: 8px 20px;
+    background-color: blue;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  .choice {
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+    width: 100%;
+    margin-bottom: 10px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="heading">Employee Details</div>
+  <label class="label">Name</label>
+  <input class="input" type="text" id="name">
+  <label class="label">Number</label>
+  <input class="input" type="text" id="number">
+  <label class="label">Job</label>
+  <input class="input" type="text" id="job">
+  <label class="label">Salary</label>
+  <input class="input" type="text" id="salary">
+  <select class="choice" id="role">
+    <option value="View Mode">View Mode</option>
+    <option value="Edit Mode">Edit Mode</option>
+  </select>
+<button class="button" id="btnFirst" name="button" value="First">First</button>
+  <button class="button" id="next">Next</button>
+  <button class="button" id="prev">Prev</button>
+  <button class="button" id="last">Last</button><br><br>
+  <button class="button" id="add">Add</button>
+  <button class="button" id="edit">Edit</button>
+  <button class="button" id="del">Del</button>
+  <button class="button" id="save">Save</button><br><br>
+  <button class="button" id="search">Search</button>
+  <button class="button" id="clear">Clear</button>
+  <button class="button" id="exit">Exit</button>
+</div>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function() {
+	  $('#btnFirst').click(function() {
+	    var buttonValue = $(this).val(); 
+
+	    $.ajax({
+	      url:"http://localhost:8080/EmployeeServlet/EmployeeServlet?button=First", 
+	      success: function(response) {
+	    	  console.log(response);
+	    	  if (response.name) {
+                  $('#name').val(response.name);
+                  $('#number').val(response.number);
+                  $('#job').val(response.job);
+                  $('#salary').val(response.salary);
+              } else if (response.error) {
+                  console.log(response.error);
+              }
+	      },
+	      error: function(xhr, status, error) {
+	     
+	        console.log(error);
+	      }
+	    });
+	  });
+	});
+</script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+package com.example;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
+public class JDBCHelper {
+	static String url = "jdbc:postgresql://192.168.110.48:5432/plf_training";
+	static String username = "plf_training_admin";
+	static String password = "pff123";
+
+	public static Connection getConnection() throws SQLException {
+		return DriverManager.getConnection(url, username, password);
+	}
+
+	public static void closeConnection(Connection connection) {
+		if (connection != null) {
+			try {
+				connection.close();
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+	public static void closePreparedStatement(PreparedStatement preparedStatement) {
+		if (preparedStatement != null) {
+			try {
+				preparedStatement.close();
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+	public static void closeResultSet(ResultSet resultSet) {
+		if (resultSet != null) {
+			try {
+				resultSet.close();
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
