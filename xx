@@ -8,15 +8,68 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 
 import javax.servlet.ServletException;
-import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import org.json.JSONObject;
 
 @SuppressWarnings("serial")
-@WebServlet("/EmployeeServlet")
+
+class Employee {
+	private String name;
+	private String number;
+	private String job;
+	private String salary;
+
+	public Employee() {
+		// Default constructor
+	}
+
+	public Employee(String name, String number, String job, String salary) {
+		this.name = name;
+		this.number = number;
+		this.job = job;
+		this.salary = salary;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public String getNumber() {
+		return number;
+	}
+
+	public void setNumber(String number) {
+		this.number = number;
+	}
+
+	public String getJob() {
+		return job;
+	}
+
+	public void setJob(String job) {
+		this.job = job;
+	}
+
+	public String getSalary() {
+		return salary;
+	}
+
+	public void setSalary(String salary) {
+		this.salary = salary;
+	}
+}
+
 public class EmployeeServlet extends HttpServlet {
 	Connection connection = null;
 	PreparedStatement preparedStatement = null;
@@ -28,7 +81,6 @@ public class EmployeeServlet extends HttpServlet {
 		String buttonClicked = request.getParameter("button");
 		response.setContentType("text/html");
 		PrintWriter out = response.getWriter();
-		out.println(buttonClicked);
 		try {
 
 			String url = "jdbc:postgresql://192.168.110.48:5432/plf_training";
@@ -41,52 +93,200 @@ public class EmployeeServlet extends HttpServlet {
 			Statement statement = connection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,
 					ResultSet.CONCUR_READ_ONLY);
 			ResultSet resultSet = statement.executeQuery(sql);
-			out.println("<html><head><title>Employee Details</title></head><body>");
-			out.println("<h1>Employee Details</h1>");
-			out.println("<table border=\"1\">");
-			out.println("<tr><th>Name</th><th>Number</th><th>Job</th><th>Salary</th></tr>");
+			ArrayList<Employee> employeeList = new ArrayList<Employee>();
+			while (resultSet.next()) {
+				String name = resultSet.getString("name");
+				String number = resultSet.getString("number");
+				String job = resultSet.getString("job");
+				String salary = resultSet.getString("salary");
 
-			int rowIndex = 0; // Keep track of the current row index
-			out.println("Satish");
-			if (resultSet.next()) {
-				out.println("Satish");
-				resultSet.beforeFirst();
-				while (resultSet.next()) {
-					out.println("Satish");
-					String name = resultSet.getString("name");
-					String number = resultSet.getString("number");
+				Employee employee = new Employee();
+				employee.setName(name);
+				employee.setNumber(number);
+				employee.setJob(job);
+				employee.setSalary(salary);
 
-					String job = resultSet.getString("job");
-					String salary = resultSet.getString("salary");
-
-					if (buttonClicked.equals("First") && rowIndex == 0) {
-						
-				
-					} else if (buttonClicked.equals("Last") && resultSet.isLast()) {
-						out.println("<tr><td>" + name + "</td><td>" + number + "</td><td>" + job + "</td><td>" + salary
-								+ "</td></tr>");
-						break; // Display only the last row
-					} else if (buttonClicked.equals("Previous") && rowIndex > 0) {
-						rowIndex--;
-					} else if (buttonClicked.equals("Next") && !resultSet.isLast()) {
-						rowIndex++;
-					}
-				}
-			} else {
-				out.println("<tr><td colspan=\"4\">No employee data found</td></tr>");
+				employeeList.add(employee);
 			}
 
-			out.println("</table>");
+			HttpSession session = request.getSession();
 
-			out.println("<form action=\"EmployeeServlet\" method=\"get\">");
-			out.println("<input type=\"submit\" name=\"button\" value=\"First\">");
-			out.println("<input type=\"submit\" name=\"button\" value=\"Last\">");
-			out.println("<input type=\"submit\" name=\"button\" value=\"Previous\">");
-			out.println("<input type=\"submit\" name=\"button\" value=\"Next\">");
-			out.println("</form>");
+			Integer rowindex = (Integer) session.getAttribute("rowindex");
+			String but = (String) session.getAttribute("but");
 
-			out.println("</body></html>");
+			if (rowindex == null) {
+				rowindex = 0;
+			}
+			if (but == null) {
+				but = "";
+			}
+			if (buttonClicked.equals("First")) {
+				if (!employeeList.isEmpty()) {
+					Employee firstEmployee = employeeList.get(0);
+					JSONObject jsonResponse = new JSONObject();
+					jsonResponse.put("name", firstEmployee.getName());
+					jsonResponse.put("number", firstEmployee.getNumber());
+					jsonResponse.put("job", firstEmployee.getJob());
+					jsonResponse.put("salary", firstEmployee.getSalary());
 
+					response.setContentType("application/json");
+					response.setCharacterEncoding("UTF-8");
+					response.getWriter().write(jsonResponse.toString());
+					session.setAttribute("rowindex", 0);
+				}
+			} else if (buttonClicked.equals("Last")) {
+				if (!employeeList.isEmpty()) {
+					Employee lastEmployee = employeeList.get(employeeList.size() - 1);
+					JSONObject jsonResponse = new JSONObject();
+					jsonResponse.put("name", lastEmployee.getName());
+					jsonResponse.put("number", lastEmployee.getNumber());
+					jsonResponse.put("job", lastEmployee.getJob());
+					jsonResponse.put("salary", lastEmployee.getSalary());
+
+					response.setContentType("application/json");
+					response.setCharacterEncoding("UTF-8");
+					response.getWriter().write(jsonResponse.toString());
+					rowindex = employeeList.size() - 1;
+					session.setAttribute("rowindex", rowindex);
+				}
+			} else if (buttonClicked.equals("Prev")) {
+				if (!employeeList.isEmpty() && rowindex > 0) {
+					rowindex--;
+					Employee previousEmployee = employeeList.get(rowindex);
+					JSONObject jsonResponse = new JSONObject();
+					jsonResponse.put("name", previousEmployee.getName());
+					jsonResponse.put("number", previousEmployee.getNumber());
+					jsonResponse.put("job", previousEmployee.getJob());
+					jsonResponse.put("salary", previousEmployee.getSalary());
+
+					response.setContentType("application/json");
+					response.setCharacterEncoding("UTF-8");
+					response.getWriter().write(jsonResponse.toString());
+					session.setAttribute("rowindex", rowindex);
+				}
+			} else if (buttonClicked.equals("Next")) {
+				if (!employeeList.isEmpty() && rowindex < employeeList.size() - 1) {
+					rowindex++;
+					Employee nextEmployee = employeeList.get(rowindex);
+					JSONObject jsonResponse = new JSONObject();
+					jsonResponse.put("name", nextEmployee.getName());
+					jsonResponse.put("number", nextEmployee.getNumber());
+					jsonResponse.put("job", nextEmployee.getJob());
+					jsonResponse.put("salary", nextEmployee.getSalary());
+
+					response.setContentType("application/json");
+					response.setCharacterEncoding("UTF-8");
+					response.getWriter().write(jsonResponse.toString());
+					session.setAttribute("rowindex", rowindex);
+				}
+			} else if (buttonClicked.equals("Add")) {
+				session.setAttribute("but", "Add");
+				JSONObject jsonResponse = new JSONObject();
+				jsonResponse.put("message", "Click save for succesfully adding");
+
+				response.setContentType("application/json");
+				response.setCharacterEncoding("UTF-8");
+				response.getWriter().write(jsonResponse.toString());
+			} else if (buttonClicked.equals("Edit")) {
+				session.setAttribute("but", "Edit");
+				JSONObject jsonResponse = new JSONObject();
+				jsonResponse.put("message", "Click save for succesfully editing");
+
+				response.setContentType("application/json");
+				response.setCharacterEncoding("UTF-8");
+				response.getWriter().write(jsonResponse.toString());
+			}
+
+			else if (buttonClicked.equals("Save")) {
+				if (but.equals("Add")) {
+					String name = request.getParameter("name");
+					String number = request.getParameter("number");
+					String job = request.getParameter("job");
+					String salary = request.getParameter("salary");
+
+					Employee employee = new Employee();
+					employee.setName(name);
+					employee.setNumber(number);
+					employee.setJob(job);
+					employee.setSalary(salary);
+
+					employeeList.add(employee);
+
+					// Insert the data into the database
+					String sql1 = "INSERT INTO satish_k (name, number, job, salary) VALUES (?, ?, ?, ?)";
+					PreparedStatement preparedStatement1 = connection.prepareStatement(sql1);
+					preparedStatement1.setString(1, name);
+					preparedStatement1.setString(2, number);
+					preparedStatement1.setString(3, job);
+					preparedStatement1.setString(4, salary);
+
+					int rowsAffected = preparedStatement1.executeUpdate();
+
+					if (rowsAffected > 0) {
+						// Data inserted successfully
+						JSONObject jsonResponse = new JSONObject();
+						jsonResponse.put("message", "Data inserted successfully");
+
+						response.setContentType("application/json");
+						response.setCharacterEncoding("UTF-8");
+						response.getWriter().write(jsonResponse.toString());
+					} else {
+						// Error occurred during insertion
+						JSONObject jsonResponse = new JSONObject();
+						jsonResponse.put("message", "Error occurred during insertion");
+
+						response.setContentType("application/json");
+						response.setCharacterEncoding("UTF-8");
+						response.getWriter().write(jsonResponse.toString());
+					}
+					session.setAttribute("rowindex", employeeList.size() - 1);
+					preparedStatement1.close();
+				}
+
+				else if (but.equals("Edit")) {
+					System.out.println(rowindex);
+					String name = request.getParameter("name");
+					String number = request.getParameter("number");
+					String job = request.getParameter("job");
+					String salary = request.getParameter("salary");
+
+					Employee employee = new Employee();
+					employee.setName(name);
+					employee.setNumber(number);
+					employee.setJob(job);
+					employee.setSalary(salary);
+
+					employeeList.set(rowindex, employee);
+					String updateSql = "UPDATE satish_k SET number=?, job=?, salary=? where name=?";
+					PreparedStatement updateStatement = connection.prepareStatement(updateSql);
+					updateStatement.setString(1, number);
+					updateStatement.setString(2, job);
+					updateStatement.setString(3, salary);
+					updateStatement.setString(4, name);
+
+					int rowsAffected = updateStatement.executeUpdate();
+
+					if (rowsAffected > 0) {
+						// Data inserted successfully
+						JSONObject jsonResponse = new JSONObject();
+						jsonResponse.put("message", "Data edited successfully");
+
+						response.setContentType("application/json");
+						response.setCharacterEncoding("UTF-8");
+						response.getWriter().write(jsonResponse.toString());
+					} else {
+						// Error occurred during insertion
+						JSONObject jsonResponse = new JSONObject();
+						jsonResponse.put("message", "Error occurred during insertion");
+
+						response.setContentType("application/json");
+						response.setCharacterEncoding("UTF-8");
+						response.getWriter().write(jsonResponse.toString());
+					}
+
+					updateStatement.close();
+				}
+			}
 		} catch (SQLException | ClassNotFoundException e) {
 			e.printStackTrace();
 			out.println(e);
@@ -131,6 +331,41 @@ public class EmployeeServlet extends HttpServlet {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+-------------------------------------------------------------------------------
+---------------------------------------
+index.html
 
 
 
@@ -194,9 +429,9 @@ public class EmployeeServlet extends HttpServlet {
     <option value="Edit Mode">Edit Mode</option>
   </select>
 <button class="button" id="btnFirst" name="button" value="First">First</button>
-  <button class="button" id="next">Next</button>
-  <button class="button" id="prev">Prev</button>
-  <button class="button" id="last">Last</button><br><br>
+  <button class="button" id="next" name="button" value="Next">Next</button>
+  <button class="button" id="prev" name="button" value="Prev">Prev</button>
+  <button class="button" id="last" name="button" value="Last">Last</button><br><br>
   <button class="button" id="add">Add</button>
   <button class="button" id="edit">Edit</button>
   <button class="button" id="del">Del</button>
@@ -207,33 +442,253 @@ public class EmployeeServlet extends HttpServlet {
 </div>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-$(document).ready(function() {
-	  $('#btnFirst').click(function() {
-	    var buttonValue = $(this).val(); 
-
-	    $.ajax({
-	      url:"http://localhost:8080/EmployeeServlet/EmployeeServlet?button=First", 
-	      success: function(response) {
-	    	  console.log(response);
-	    	  if (response.name) {
-                  $('#name').val(response.name);
-                  $('#number').val(response.number);
-                  $('#job').val(response.job);
-                  $('#salary').val(response.salary);
-              } else if (response.error) {
-                  console.log(response.error);
+document.addEventListener("DOMContentLoaded", function() {
+	var var1="";
+    document.getElementById("btnFirst").addEventListener("click", function() {
+        var buttonValue =this.value;
+        
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", "http://localhost:8080/EmployeeServlet/EmployeeServlet?button=First", true);
+        
+        xhr.onload = function() {
+            if (xhr.status === 200) {
+                var response = JSON.parse(xhr.responseText);
+                console.log(response);
+                
+                if (response.name) {
+                    document.getElementById("name").value = response.name;
+                    document.getElementById("number").value = response.number;
+                    document.getElementById("job").value = response.job;
+                    document.getElementById("salary").value = response.salary;
+                } else {
+                    console.log(response);
+                }
+            }
+        };
+        
+        xhr.onerror = function() {
+            console.log("Request failed");
+        };
+        
+        xhr.send();
+    });
+    document.getElementById("next").addEventListener("click", function() {
+        var buttonValue =this.value;
+        
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", `http://localhost:8080/EmployeeServlet/EmployeeServlet?button=Next`, true);
+        
+        xhr.onload = function() {
+            if (xhr.status === 200) {
+                var response = JSON.parse(xhr.responseText);
+                console.log(response);
+                
+                if (response.name) {
+                    document.getElementById("name").value = response.name;
+                    document.getElementById("number").value = response.number;
+                    document.getElementById("job").value = response.job;
+                    document.getElementById("salary").value = response.salary;
+                } else {
+                    console.log(response);
+                }
+            }
+        };
+        
+        xhr.onerror = function() {
+            console.log("Request failed");
+        };
+        
+        xhr.send();
+    });
+    document.getElementById("prev").addEventListener("click", function() {
+        var buttonValue =this.value;
+        
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", `http://localhost:8080/EmployeeServlet/EmployeeServlet?button=Prev`, true);
+        
+        xhr.onload = function() {
+            if (xhr.status === 200) {
+                var response = JSON.parse(xhr.responseText);
+                console.log(response);
+                
+                if (response.name) {
+                    document.getElementById("name").value = response.name;
+                    document.getElementById("number").value = response.number;
+                    document.getElementById("job").value = response.job;
+                    document.getElementById("salary").value = response.salary;
+                } else {
+                    console.log(response);
+                }
+            }
+        };
+        
+        xhr.onerror = function() {
+            console.log("Request failed");
+        };
+        
+        xhr.send();
+    });
+    document.getElementById("last").addEventListener("click", function() {
+        var buttonValue =this.value;
+        
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", `http://localhost:8080/EmployeeServlet/EmployeeServlet?button=Last`, true);
+        
+        xhr.onload = function() {
+            if (xhr.status === 200) {
+                var response = JSON.parse(xhr.responseText);
+                console.log(response);
+                
+                if (response.name) {
+                    document.getElementById("name").value = response.name;
+                    document.getElementById("number").value = response.number;
+                    document.getElementById("job").value = response.job;
+                    document.getElementById("salary").value = response.salary;
+                } else {
+                    console.log(response);
+                }
+            }
+        };
+        
+        xhr.onerror = function() {
+            console.log("Request failed");
+        };
+        
+        xhr.send();
+    });
+    document.getElementById("add").addEventListener("click", function() {
+    	  document.getElementById("name").value = "";
+          document.getElementById("number").value ="";
+          document.getElementById("job").value = "";
+          document.getElementById("salary").value = "";
+          var1="add";
+          var xhr = new XMLHttpRequest();
+          xhr.open("GET", `http://localhost:8080/EmployeeServlet/EmployeeServlet?button=Add`, true);
+          
+          xhr.onload = function() {
+              if (xhr.status === 200) {
+                  var response = JSON.parse(xhr.responseText);
+                  console.log(response);
+                  
+                  if (response.message) {
+                      alert(response.message);
+                  } else {
+                      console.log(response);
+                  }
               }
-	      },
-	      error: function(xhr, status, error) {
-	     
-	        console.log(error);
-	      }
-	    });
-	  });
-	});
+          };
+          
+          xhr.onerror = function() {
+              console.log("Request failed");
+          };
+          
+          xhr.send();
+        	
+    });
+    document.getElementById("edit").addEventListener("click", function() {
+  	
+        var1="edit";
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", `http://localhost:8080/EmployeeServlet/EmployeeServlet?button=Edit`,true);
+        
+        xhr.onload = function() {
+            if (xhr.status === 200) {
+                var response = JSON.parse(xhr.responseText);
+                console.log(response);
+                
+                if (response.message) {
+                    alert(response.message);
+                } else {
+                    console.log(response);
+                }
+            }
+        };
+        
+        xhr.onerror = function() {
+            console.log("Request failed");
+        };
+        
+        xhr.send();
+      	
+  });
+    document.getElementById("save").addEventListener("click", function() {
+    console.log(var1);
+  	if(var1==="add"){
+  		console.log("satish");
+  	    	var xhr = new XMLHttpRequest();
+  	        var nameValue = document.getElementById("name").value;
+  	        var numberValue = document.getElementById("number").value;
+  	        var jobValue = document.getElementById("job").value;
+  	        var salaryValue = document.getElementById("salary").value;
+  	 xhr.open("GET", `http://localhost:8080/EmployeeServlet/EmployeeServlet?button=Save&name=${nameValue}&number=${numberValue}&job=${jobValue}&salary=${salaryValue}`
+  	, true);
+  	 		
+  	 xhr.onload = function() {
+  	     if (xhr.status === 200) {
+  	         var response = JSON.parse(xhr.responseText);
+  	         console.log(response);
+  	         if(response.message){
+  	        	 alert(response.message);
+  	         }
+  	     }
+  	 };
+  	 
+  	 xhr.onerror = function() {
+  	     console.log("Request failed");
+  	 };
+  	        xhr.send();
+  	    }
+ 
+    else if(var1==="edit"){
+  		
+  	    	var xhr = new XMLHttpRequest();
+  	        var nameValue = document.getElementById("name").value;
+  	        var numberValue = document.getElementById("number").value;
+  	        var jobValue = document.getElementById("job").value;
+  	        var salaryValue = document.getElementById("salary").value;
+  	 xhr.open("GET", `http://localhost:8080/EmployeeServlet/EmployeeServlet?button=Save&name=${nameValue}&number=${numberValue}&job=${jobValue}&salary=${salaryValue}`
+  	, true);
+  	 		
+  	 xhr.onload = function() {
+  	     if (xhr.status === 200) {
+  	         var response = JSON.parse(xhr.responseText);
+  	         console.log(response);
+  	         if(response.message){
+  	        	 alert(response.message);
+  	         }
+  	     }
+  	 };
+  	 
+  	 xhr.onerror = function() {
+  	     console.log("Request failed");
+  	 };
+  	        xhr.send();
+  	    }
+  	
+     
+      	
+  });
+    
+});
+
 </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -330,7 +785,38 @@ public class JDBCHelper {
 
 
 
+-----------------------------------------------------------------------
+web.xml
 
+
+
+
+
+
+<?xml version="1.0" encoding="UTF-8"?>
+
+<web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee
+                             http://xmlns.jcp.org/xml/ns/javaee/web-app_4_0.xsd"
+	version="4.0">
+	<welcome-file-list>
+		<welcome-file>
+        index.html</welcome-file>
+	</welcome-file-list>
+
+
+	<servlet>
+		<servlet-name>EmployeeServlet</servlet-name>
+		<servlet-class>com.example.EmployeeServlet</servlet-class>
+	</servlet>
+	<servlet-mapping>
+		<servlet-name>EmployeeServlet</servlet-name>
+		<url-pattern>/EmployeeServlet</url-pattern>
+	</servlet-mapping>
+
+
+
+</web-app>  
 
 
 
