@@ -20,23 +20,75 @@ import org.json.JSONObject;
 
 @SuppressWarnings("serial")
 
+class Employee {
+	private String name;
+	private String number;
+	private String job;
+	private String salary;
+
+	public Employee() {
+		// Default constructor
+	}
+
+	public Employee(String name, String number, String job, String salary) {
+		this.name = name;
+		this.number = number;
+		this.job = job;
+		this.salary = salary;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public String getNumber() {
+		return number;
+	}
+
+	public void setNumber(String number) {
+		this.number = number;
+	}
+
+	public String getJob() {
+		return job;
+	}
+
+	public void setJob(String job) {
+		this.job = job;
+	}
+
+	public String getSalary() {
+		return salary;
+	}
+
+	public void setSalary(String salary) {
+		this.salary = salary;
+	}
+}
+
 public class EmployeeServlet extends HttpServlet {
 	Connection connection = null;
 	PreparedStatement preparedStatement = null;
 	ResultSet resultSet = null;
 
 	protected void doGet(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        String buttonClicked = request.getParameter("button");
-        response.setContentType("text/html");
-        PrintWriter out = response.getWriter();
+			throws ServletException, IOException {
 
-        Connection connection = null;
-        PreparedStatement preparedStatement = null;
-        ResultSet resultSet = null;
+		String buttonClicked = request.getParameter("button");
+		response.setContentType("text/html");
+		PrintWriter out = response.getWriter();
+		try {
 
-        try {
-            		connection = JDBCHelper.getConnection();
+			String url = "jdbc:postgresql://192.168.110.48:5432/plf_training";
+			String username = "plf_training_admin";
+			String password = "pff123";
+			Class.forName("org.postgresql.Driver");
+			Connection connection = DriverManager.getConnection(url, username, password);
+
 			String sql = "SELECT * FROM satish_k";
 			Statement statement = connection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,
 					ResultSet.CONCUR_READ_ONLY);
@@ -143,6 +195,52 @@ public class EmployeeServlet extends HttpServlet {
 				response.setContentType("application/json");
 				response.setCharacterEncoding("UTF-8");
 				response.getWriter().write(jsonResponse.toString());
+			} else if (buttonClicked.equals("Delete")) {
+				session.setAttribute("but", "Delete");
+				JSONObject jsonResponse = new JSONObject();
+				jsonResponse.put("message", "Click save for succesfully Deleting");
+
+				response.setContentType("application/json");
+				response.setCharacterEncoding("UTF-8");
+				response.getWriter().write(jsonResponse.toString());
+			} else if (buttonClicked.equals("Search")) {
+				String name = request.getParameter("name");
+
+				// Query the database based on the search name
+				String searchSql = "SELECT * FROM satish_k WHERE name=?";
+				PreparedStatement searchStatement = connection.prepareStatement(searchSql);
+				searchStatement.setString(1, name);
+
+				ResultSet searchResultSet = searchStatement.executeQuery();
+
+				if (searchResultSet.next()) {
+					// Found a matching record
+					Employee searchEmployee = new Employee(searchResultSet.getString("name"),
+							searchResultSet.getString("number"), searchResultSet.getString("job"),
+							searchResultSet.getString("salary"));
+
+					JSONObject jsonResponse = new JSONObject();
+					jsonResponse.put("name", searchEmployee.getName());
+					jsonResponse.put("number", searchEmployee.getNumber());
+					jsonResponse.put("job", searchEmployee.getJob());
+					jsonResponse.put("salary", searchEmployee.getSalary());
+
+					response.setContentType("application/json");
+					response.setCharacterEncoding("UTF-8");
+					response.getWriter().write(jsonResponse.toString());
+				} else {
+					// No matching record found
+					JSONObject jsonResponse = new JSONObject();
+					jsonResponse.put("message", "No matching record found");
+
+					response.setContentType("application/json");
+					response.setCharacterEncoding("UTF-8");
+					response.getWriter().write(jsonResponse.toString());
+				}
+
+				// Close resources
+				JDBCHelper.closeResultSet(searchResultSet);
+				JDBCHelper.closePreparedStatement(searchStatement);
 			}
 
 			else if (buttonClicked.equals("Save")) {
@@ -233,7 +331,41 @@ public class EmployeeServlet extends HttpServlet {
 					}
 
 					updateStatement.close();
+				} else if (but.equals("Delete")) {
+					System.out.println(rowindex);
+					String name = request.getParameter("name");
+					String number = request.getParameter("number");
+					String job = request.getParameter("job");
+					String salary = request.getParameter("salary");
+					employeeList.remove(rowindex);
+					String updateSql = "Delete from satish_k where name=?";
+					PreparedStatement updateStatement = connection.prepareStatement(updateSql);
+
+					updateStatement.setString(1, name);
+
+					int rowsAffected = updateStatement.executeUpdate();
+
+					if (rowsAffected > 0) {
+						// Data Deleted successfully
+						JSONObject jsonResponse = new JSONObject();
+						jsonResponse.put("message", "Data Deleted successfully");
+
+						response.setContentType("application/json");
+						response.setCharacterEncoding("UTF-8");
+						response.getWriter().write(jsonResponse.toString());
+					} else {
+						// Error occurred during insertion
+						JSONObject jsonResponse = new JSONObject();
+						jsonResponse.put("message", "Error occurred during insertion");
+
+						response.setContentType("application/json");
+						response.setCharacterEncoding("UTF-8");
+						response.getWriter().write(jsonResponse.toString());
+					}
+
+					updateStatement.close();
 				}
+
 			}
 		} catch (SQLException | ClassNotFoundException e) {
 			e.printStackTrace();
@@ -251,7 +383,6 @@ public class EmployeeServlet extends HttpServlet {
 		doGet(request, response);
 	}
 }
-
 
 
 
@@ -559,6 +690,79 @@ document.addEventListener("DOMContentLoaded", function() {
         xhr.send();
       	
   });
+    document.getElementById("del").addEventListener("click", function() {
+      	
+        var1="delete";
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", `http://localhost:8080/EmployeeServlet/EmployeeServlet?button=Delete`,true);
+        
+        xhr.onload = function() {
+            if (xhr.status === 200) {
+                var response = JSON.parse(xhr.responseText);
+                console.log(response);
+                
+                if (response.message) {
+                    alert(response.message);
+                } else {
+                    console.log(response);
+                }
+            }
+        };
+        
+        xhr.onerror = function() {
+            console.log("Request failed");
+        };
+        
+        xhr.send();
+      	
+  });
+    
+    document.getElementById("search").addEventListener("click", function() {
+        var searchName = document.getElementById("name").value;
+        
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", `http://localhost:8080/EmployeeServlet/EmployeeServlet?button=Search&name=${searchName}`, true);
+
+        xhr.onload = function() {
+            if (xhr.status === 200) {
+                var response = JSON.parse(xhr.responseText);
+                console.log(response);
+
+                if (response.name) {
+                    document.getElementById("name").value = response.name;
+                    document.getElementById("number").value = response.number;
+                    document.getElementById("job").value = response.job;
+                    document.getElementById("salary").value = response.salary;
+                } else {
+                    console.log(response);
+                }
+            }
+        };
+
+        xhr.onerror = function() {
+            console.log("Request failed");
+        };
+
+        xhr.send();
+    });
+
+    
+    
+ document.getElementById("clear").addEventListener("click", function() {
+      	
+	 document.getElementById("name").value = "";
+     document.getElementById("number").value ="";
+     document.getElementById("job").value = "";
+     document.getElementById("salary").value = "";
+      	
+  });
+ document.getElementById("exit").addEventListener("click", function() {
+   	
+	 window.close();
+      	
+  });
+    
+    
     document.getElementById("save").addEventListener("click", function() {
     console.log(var1);
   	if(var1==="add"){
@@ -613,7 +817,31 @@ document.addEventListener("DOMContentLoaded", function() {
   	        xhr.send();
   	    }
   	
-     
+    else if(var1==="delete"){
+  		
+	    	var xhr = new XMLHttpRequest();
+	        var nameValue = document.getElementById("name").value;
+	        var numberValue = document.getElementById("number").value;
+	        var jobValue = document.getElementById("job").value;
+	        var salaryValue = document.getElementById("salary").value;
+	 xhr.open("GET", `http://localhost:8080/EmployeeServlet/EmployeeServlet?button=Save&name=${nameValue}&number=${numberValue}&job=${jobValue}&salary=${salaryValue}`
+	, true);
+	 		
+	 xhr.onload = function() {
+	     if (xhr.status === 200) {
+	         var response = JSON.parse(xhr.responseText);
+	         console.log(response);
+	         if(response.message){
+	        	 alert(response.message);
+	         }
+	     }
+	 };
+	 
+	 xhr.onerror = function() {
+	     console.log("Request failed");
+	 };
+	        xhr.send();
+	    }
       	
   });
     
@@ -622,6 +850,7 @@ document.addEventListener("DOMContentLoaded", function() {
 </script>
 </body>
 </html>
+
 
 
 -------------------------------------------------------------------------
