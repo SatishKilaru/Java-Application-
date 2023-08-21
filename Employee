@@ -20,55 +20,6 @@ import org.json.JSONObject;
 
 @SuppressWarnings("serial")
 
-class Employee {
-	private String name;
-	private String number;
-	private String job;
-	private String salary;
-
-	public Employee() {
-		// Default constructor
-	}
-
-	public Employee(String name, String number, String job, String salary) {
-		this.name = name;
-		this.number = number;
-		this.job = job;
-		this.salary = salary;
-	}
-
-	public String getName() {
-		return name;
-	}
-
-	public void setName(String name) {
-		this.name = name;
-	}
-
-	public String getNumber() {
-		return number;
-	}
-
-	public void setNumber(String number) {
-		this.number = number;
-	}
-
-	public String getJob() {
-		return job;
-	}
-
-	public void setJob(String job) {
-		this.job = job;
-	}
-
-	public String getSalary() {
-		return salary;
-	}
-
-	public void setSalary(String salary) {
-		this.salary = salary;
-	}
-}
 
 public class EmployeeServlet extends HttpServlet {
 	Connection connection = null;
@@ -82,12 +33,8 @@ public class EmployeeServlet extends HttpServlet {
 		response.setContentType("text/html");
 		PrintWriter out = response.getWriter();
 		try {
-
-			String url = "jdbc:postgresql://192.168.110.48:5432/plf_training";
-			String username = "plf_training_admin";
-			String password = "pff123";
 			Class.forName("org.postgresql.Driver");
-			Connection connection = DriverManager.getConnection(url, username, password);
+			Connection connection = JDBCHelper.getConnection();
 
 			String sql = "SELECT * FROM satish_k";
 			Statement statement = connection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,
@@ -1010,6 +957,58 @@ public class JDBCHelper {
     }
 }
 
+------------------------------------
+Employee class 
+
+class Employee {
+	private String name;
+	private String number;
+	private String job;
+	private String salary;
+
+	public Employee() {
+		// Default constructor
+	}
+
+	public Employee(String name, String number, String job, String salary) {
+		this.name = name;
+		this.number = number;
+		this.job = job;
+		this.salary = salary;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public String getNumber() {
+		return number;
+	}
+
+	public void setNumber(String number) {
+		this.number = number;
+	}
+
+	public String getJob() {
+		return job;
+	}
+
+	public void setJob(String job) {
+		this.job = job;
+	}
+
+	public String getSalary() {
+		return salary;
+	}
+
+	public void setSalary(String salary) {
+		this.salary = salary;
+	}
+}
 
 
 
