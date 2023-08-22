@@ -1,0 +1,291 @@
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1"
+	pageEncoding="ISO-8859-1"%><%@ page import="java.sql.*" %>
+<%@ page import="javax.servlet.http.*,javax.servlet.http.HttpSession" %>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="ISO-8859-1">
+<title>Employee Using JSP</title>
+<style>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        .heading {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        .label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .input {
+            width: 100%;
+            padding: 5px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .button {
+            padding: 8px 20px;
+            background-color: blue;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .choice {
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+    </style>
+</style>
+</head>
+<body>
+	<form>
+		<div class="container">
+			<div class="heading" style="text-align:center;">Employee Details</div>
+			<label class="label">Name</label> <input class="input" type="text"
+				id="name" name="name"> <label class="label">Number</label> <input
+				class="input" type="text" id="number" name="number"> <label class="label">Job</label>
+			<input class="input" type="text" id="job" name="job"> <label
+				class="label">Salary</label> <input class="input" type="text"
+				id="salary" name="salary"> <select class="choice" id="role">
+				<option value="View Mode">View Mode</option>
+				<option value="Edit Mode">Edit Mode</option>
+			</select>
+			<button type="submit" id="btnFirst" name="button" value="First">First</button>
+			<button type="submit" id="next" name="button" value="Next">Next</button>
+			<button type="submit" id="prev" name="button" value="Prev">Prev</button>
+			<button type="submit" id="last" name="button" value="Last">Last</button>
+			<br>
+			<br>
+			<button type="submit" id="add" name="button" value="Add">Add</button>
+			<button type="submit" id="edit" name="button" value="Edit">Edit</button>
+			<button type="submit" id="del" name="button" value="Del">Del</button>
+			<button type="submit" id="save" name="button" value="Save">Save</button>
+			<br>
+			<br>
+			<button type="submit" id="search" name="button" value="Search">Search</button>
+			<button type="submit" id="clear" name="button" value="Clear" >Clear</button>
+			<button type="submit" id="exit" name="button" value="Exit" onclick="exit()">Exit</button>
+		</div>
+	</form>
+	
+	<%
+    // JDBC connection parameters
+    String url = "jdbc:postgresql://192.168.110.48:5432/plf_training";
+    String username = "plf_training_admin";
+    String password = "pff123";
+	String button=request.getParameter("button");
+	
+    Connection connection = null;
+    PreparedStatement preparedStatement = null;
+    ResultSet resultSet = null;
+    String name="";
+    String number="";
+    String job="";
+    String salary="";
+    try {
+        // Establish JDBC connection
+        Class.forName("org.postgresql.Driver");
+        connection = DriverManager.getConnection(url, username, password);
+        
+		
+		HttpSession store = request.getSession();
+		Integer rowindex = (Integer) store.getAttribute("rowindex");
+		String but = (String) session.getAttribute("but");
+		if (rowindex == null) {
+			rowindex = 0;
+		}
+		if (but == null) {
+			but = "";
+		}
+		
+		if(button.equals("First")){
+			String sql="SELECT * FROM satish_k LIMIT 1";
+			Statement statement = connection.createStatement();
+			resultSet = statement.executeQuery(sql);
+			if(resultSet.next()){	
+			name=resultSet.getString("name");
+			number=resultSet.getString("number");
+			job=resultSet.getString("job");
+			salary=resultSet.getString("salary");
+			
+			}
+			session.setAttribute("rowindex", 0);
+		}
+		else if( button.equals("Last")){
+			
+			 String countQuery = "SELECT COUNT(*) FROM satish_k";
+			 Statement statement = connection.createStatement();
+	            resultSet = statement.executeQuery(countQuery);
+	            int totalCount = 0;
+	            if (resultSet.next()) {
+	                totalCount = resultSet.getInt(1);
+	            }
+	            int offset = totalCount - 1;
+	            String sql = "SELECT * FROM satish_k OFFSET " + offset + " LIMIT 1";
+			
+			resultSet = statement.executeQuery(sql);
+			if(resultSet.next()){	
+			name=resultSet.getString("name");
+			number=resultSet.getString("number");
+			job=resultSet.getString("job");
+			salary=resultSet.getString("salary");
+			}
+			session.setAttribute("rowindex",totalCount-1);
+		}
+		else if( button.equals("Prev")){
+			if(rowindex-1>=0){
+	            int offset = rowindex-1;
+	            String sql = "SELECT * FROM satish_k OFFSET " + offset + " LIMIT 1";
+	            Statement statement = connection.createStatement();
+			resultSet = statement.executeQuery(sql);
+			if(resultSet.next()){	
+			name=resultSet.getString("name");
+			number=resultSet.getString("number");
+			job=resultSet.getString("job");
+			salary=resultSet.getString("salary");
+			}
+			session.setAttribute("rowindex",rowindex-1);
+			}
+			
+		}
+		else if( button.equals("Next")){
+			 String countQuery = "SELECT COUNT(*) FROM satish_k";
+			 Statement statement = connection.createStatement();
+	            resultSet = statement.executeQuery(countQuery);
+	            int totalCount = 0;
+	            if (resultSet.next()) {
+	                totalCount = resultSet.getInt(1);
+	            }
+			
+			if(rowindex+1<=totalCount){
+	            int offset = rowindex+1;
+	            String sql = "SELECT * FROM satish_k OFFSET " + offset + " LIMIT 1";
+			resultSet = statement.executeQuery(sql);
+			if(resultSet.next()){	
+			name=resultSet.getString("name");
+			number=resultSet.getString("number");
+			job=resultSet.getString("job");
+			salary=resultSet.getString("salary");
+			}
+			session.setAttribute("rowindex",rowindex+1);
+			}
+		}
+		else if(button.equals("Clear")){
+		}
+		else if(button.equals("Add")){
+			session.setAttribute("but", "Add");
+		}
+		else if(button.equals("Del")){
+			session.setAttribute("but", "Del");
+	        name=request.getParameter("name");
+	        number=request.getParameter("number");
+	        job=request.getParameter("job");
+	        salary=request.getParameter("salary");
+		}
+	else if(button.equals("Edit")){
+		session.setAttribute("but", "Edit");
+        name=request.getParameter("name");
+        number=request.getParameter("number");
+        job=request.getParameter("job");
+        salary=request.getParameter("salary");
+	}
+	else if(button.equals("Search")){
+		String ele=request.getParameter("name");
+		System.out.println(ele);
+		String sql="Select * from satish_k where name=?";
+		preparedStatement = connection.prepareStatement(sql);
+        preparedStatement.setString(1,ele);
+        resultSet = preparedStatement.executeQuery();
+        if(resultSet.next()){	
+			name=resultSet.getString("name");
+			number=resultSet.getString("number");
+			job=resultSet.getString("job");
+			salary=resultSet.getString("salary");
+			}
+	}
+		else if(button.equals("Save")){
+		
+			if(but.equals("Add")){
+				
+				String newName = request.getParameter("name");
+				System.out.println(newName);
+			    String newNumber = request.getParameter("number");
+			    String newJob = request.getParameter("job");
+			    String newSalary = request.getParameter("salary");
+			    String insertQuery = "INSERT INTO satish_k (name, number, job, salary) VALUES (?, ?, ?, ?)";
+		        preparedStatement = connection.prepareStatement(insertQuery);
+		        preparedStatement.setString(1, newName);
+		        preparedStatement.setString(2, newNumber);
+		        preparedStatement.setString(3, newJob);
+		        preparedStatement.setString(4, newSalary);
+		        preparedStatement.executeUpdate();
+			}
+			else if(but.equals("Del")){
+				String newName = request.getParameter("name");
+				String sql="Delete from satish_k where name=?";
+				preparedStatement = connection.prepareStatement(sql);
+		        preparedStatement.setString(1,newName);
+		        preparedStatement.executeUpdate();
+	
+			}
+			
+			else if(but.equals("Edit")){
+				
+				String name1=request.getParameter("name");
+				System.out.println(name1);
+		        String number1=request.getParameter("number");
+		        String job1=request.getParameter("job");
+		        String salary1=request.getParameter("salary");
+		        String updateQuery = "UPDATE satish_k SET job = ?, number = ?, salary = ? WHERE name = ?";
+                preparedStatement = connection.prepareStatement(updateQuery);
+                preparedStatement.setString(1, job1);
+                preparedStatement.setString(2, number1);
+                preparedStatement.setString(3, salary1);
+                preparedStatement.setString(4, name1);
+                int rowsAffected = preparedStatement.executeUpdate();
+			}	
+		}
+		
+		
+		
+        
+    } catch (Exception e) {
+        e.printStackTrace();
+    } finally {
+        // Close JDBC resources
+        try { if (resultSet != null) resultSet.close(); } catch (Exception e) { }
+        try { if (preparedStatement != null) preparedStatement.close(); } catch (Exception e) { }
+        try { if (connection != null) connection.close(); } catch (Exception e) { }
+    }
+%>
+<script>
+document.getElementById("name").value = "<%= name %>";
+document.getElementById("number").value ="<%= number%>";
+document.getElementById("job").value = "<%= job %>";
+document.getElementById("salary").value = "<%= salary %>";
+function exit(){
+	window.close();
+}
+
+</script>
+	
+	
+</body>
+</html>
